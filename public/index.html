@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>QVAC LoRA Trainer</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0b10;
+    --border: #232433;
+    --text: #eef0f6;
+    --muted: #8b8fa3;
+    --accent1: #7c5cff;
+    --accent2: #22d3ee;
+    --accent3: #ff5cad;
+    --good: #2ee6a6;
+    --warn: #f5a623;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(1100px 500px at 15% -10%, #7c5cff22, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #22d3ee1c, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    margin: 0;
+    min-height: 100vh;
+    padding: 48px 24px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent2);
+    background: #22d3ee14; border: 1px solid #22d3ee33;
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 18px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--good); box-shadow: 0 0 8px var(--good);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1);} 50% { opacity:.4; transform:scale(.7);} }
+
+  h1 {
+    font-size: 32px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em;
+    background: linear-gradient(90deg, #fff 20%, var(--accent2) 60%, var(--accent1) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  p.sub { color: var(--muted); font-size: 14.5px; margin: 0 0 28px; max-width: 640px; line-height: 1.5; }
+  p.sub code { background: #ffffff10; padding: 1px 6px; border-radius: 5px; color: #cfd3ff; font-size: 13px; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: linear-gradient(180deg, #ffffff08, #ffffff02);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 20px 60px -20px #00000090;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card p.desc { font-size: 12.5px; color: var(--muted); margin: 0 0 16px; }
+
+  button.primary {
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #05060a; font-weight: 700; border: none;
+    padding: 12px 22px; border-radius: 10px; font-size: 14px; cursor: pointer;
+    width: 100%;
+    transition: transform .1s, filter .15s, box-shadow .15s;
+    box-shadow: 0 8px 24px -8px #7c5cff88;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+  button.primary:disabled { background: #22232f; color: #6b6f83; cursor: not-allowed; box-shadow: none; }
+
+  .progressbar {
+    background: #ffffff0c; border-radius: 999px; height: 8px; margin-top: 14px; overflow: hidden;
+  }
+  .progressbar .fill {
+    height: 100%; width: 0%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent1), var(--accent2), var(--accent3));
+    background-size: 200% 100%; animation: shimmer 1.4s linear infinite;
+    transition: width .2s ease;
+  }
+  @keyframes shimmer { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+
+  .log {
+    margin-top: 14px;
+    background: #0d0e14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: 11px;
+    color: #7d8299;
+    height: 140px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .stat { background: #0d0e14; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+  .stat .k { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .v { font-size: 15px; font-weight: 700; margin-top: 2px; }
+
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .toggle {
+    flex: 1; text-align: center; padding: 9px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); font-size: 12.5px; color: var(--muted);
+    transition: all .15s;
+  }
+  .toggle.active.base { background: #ffffff10; color: var(--text); border-color: #ffffff30; }
+  .toggle.active.lora { background: linear-gradient(135deg, var(--accent1)33, var(--accent2)33); color: var(--text); border-color: var(--accent2); }
+  .toggle:not(.active):hover { border-color: #ffffff30; }
+
+  #messages {
+    height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 12px; padding-right: 4px;
+  }
+  .msg { display: flex; gap: 8px; max-width: 92%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700;
+  }
+  .msg.user .avatar { background: linear-gradient(135deg, var(--accent1), var(--accent3)); color: #05060a; }
+  .msg.bot .avatar { background: linear-gradient(135deg, var(--accent2), var(--good)); color: #05060a; }
+  .bubble { padding: 8px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45; white-space: pre-wrap; }
+  .msg.user .bubble { background: linear-gradient(135deg, var(--accent1), var(--accent3)); color: #05060a; }
+  .msg.bot .bubble { background: #161826; border: 1px solid var(--border); }
+  .empty { color: #565a70; font-size: 12.5px; text-align: center; margin-top: 40px; }
+
+  .row { display: flex; gap: 8px; }
+  input[type=text] {
+    flex: 1; background: #0d0e14; border: 1px solid var(--border); color: var(--text);
+    padding: 11px 14px; border-radius: 10px; font-size: 13.5px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input[type=text]:focus { border-color: var(--accent1); box-shadow: 0 0 0 3px #7c5cff2e; }
+  input[type=text]:disabled { opacity: .5; }
+  button.send {
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    color: #05060a; font-weight: 700; border: none; padding: 0 18px;
+    border-radius: 10px; font-size: 13.5px; cursor: pointer;
+  }
+  button.send:disabled { background: #22232f; color: #6b6f83; cursor: not-allowed; }
+
+  #status { font-size: 12px; color: var(--muted); margin-top: 10px; min-height: 16px; }
+  footer { margin-top: 24px; font-size: 12px; color: #565a70; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow"><span class="dot"></span> Runs 100% on-device</div>
+  <h1>QVAC LoRA Trainer</h1>
+  <p class="sub">
+    Fine-tunes Qwen3 0.6B with a LoRA adapter through Tether's QVAC SDK &mdash;
+    <code>loadModel()</code> + <code>finetune()</code>. Trains on a small dataset
+    teaching the model what QVAC actually is, then compare base vs. fine-tuned
+    answers live.
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>1. Train</h2>
+      <p class="desc">Runs LoRA fine-tuning on-device against data/qvac-facts.jsonl</p>
+      <button class="primary" id="trainButton">Start Training</button>
+      <div class="progressbar" id="trainBar" style="display:none;"><div class="fill" id="trainFill"></div></div>
+      <div class="log" id="trainLog">Not trained yet.</div>
+      <div class="statgrid" id="statGrid" style="display:none;">
+        <div class="stat"><div class="k">Train loss</div><div class="v" id="statTrainLoss">&mdash;</div></div>
+        <div class="stat"><div class="k">Val accuracy</div><div class="v" id="statValAcc">&mdash;</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. Compare</h2>
+      <p class="desc">Ask the same question to the base model and the fine-tuned one</p>
+      <div class="toggle-row">
+        <div class="toggle base active" id="toggleBase">Base model</div>
+        <div class="toggle lora" id="toggleLora">Fine-tuned (LoRA)</div>
+      </div>
+      <div id="messages"><div class="empty">Ask something &mdash; try "What is QVAC?"</div></div>
+      <div class="row">
+        <input id="chatInput" type="text" placeholder="What is QVAC?" />
+        <button class="send" id="sendButton">Send</button>
+      </div>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <footer>on-device inference &middot; QVAC SDK &middot; loadModel() + finetune() + completion()</footer>
+</div>
+
+<script>
+  const trainButton = document.getElementById('trainButton');
+  const trainBar = document.getElementById('trainBar');
+  const trainFill = document.getElementById('trainFill');
+  const trainLog = document.getElementById('trainLog');
+  const statGrid = document.getElementById('statGrid');
+  const statTrainLoss = document.getElementById('statTrainLoss');
+  const statValAcc = document.getElementById('statValAcc');
+
+  const toggleBase = document.getElementById('toggleBase');
+  const toggleLora = document.getElementById('toggleLora');
+  const messagesEl = document.getElementById('messages');
+  const chatInput = document.getElementById('chatInput');
+  const sendButton = document.getElementById('sendButton');
+  const statusEl = document.getElementById('status');
+
+  let mode = 'base';
+  let empty = true;
+
+  toggleBase.addEventListener('click', () => setMode('base'));
+  toggleLora.addEventListener('click', () => setMode('lora'));
+  function setMode(m) {
+    mode = m;
+    toggleBase.classList.toggle('active', m === 'base');
+    toggleLora.classList.toggle('active', m === 'lora');
+  }
+
+  trainButton.addEventListener('click', () => {
+    trainButton.disabled = true;
+    trainBar.style.display = 'block';
+    trainFill.style.width = '0%';
+    trainLog.textContent = '';
+    statGrid.style.display = 'none';
+
+    const es = new EventSource('/api/train');
+    es.addEventListener('log', (e) => {
+      const { line } = JSON.parse(e.data);
+      trainLog.textContent += line + '\n';
+      trainLog.scrollTop = trainLog.scrollHeight;
+    });
+    es.addEventListener('progress', (e) => {
+      const { pct } = JSON.parse(e.data);
+      trainFill.style.width = pct + '%';
+    });
+    es.addEventListener('done', (e) => {
+      const data = JSON.parse(e.data);
+      trainFill.style.width = '100%';
+      statGrid.style.display = 'grid';
+      statTrainLoss.textContent = data.stats.train_loss.toFixed(4);
+      statValAcc.textContent = (data.stats.val_accuracy * 100).toFixed(1) + '%';
+      trainButton.disabled = false;
+      trainButton.textContent = 'Retrain';
+      es.close();
+    });
+    es.addEventListener('error', (e) => {
+      let message = 'Training failed';
+      try { message = JSON.parse(e.data).error; } catch {}
+      trainLog.textContent += '\n✖ ' + message;
+      trainButton.disabled = false;
+      es.close();
+    });
+  });
+
+  function clearEmpty() {
+    if (empty) { messagesEl.innerHTML = ''; empty = false; }
+  }
+  function addMessage(role, text, tag) {
+    clearEmpty();
+    const msg = document.createElement('div');
+    msg.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+    msg.innerHTML = `<div class="avatar">${role === 'user' ? 'You' : (tag || 'AI')}</div><div class="bubble"></div>`;
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    const bubble = msg.querySelector('.bubble');
+    bubble.textContent = text;
+    return bubble;
+  }
+
+  sendButton.addEventListener('click', send);
+  chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+
+  function send() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    addMessage('user', message);
+    chatInput.value = '';
+    chatInput.disabled = true;
+    sendButton.disabled = true;
+    statusEl.textContent = `▸ Generating on-device (${mode === 'lora' ? 'fine-tuned' : 'base'} model)...`;
+
+    const tag = mode === 'lora' ? 'LoRA' : 'Base';
+    const bubble = addMessage('bot', '', tag);
+
+    const es = new EventSource(`/api/chat?message=${encodeURIComponent(message)}&mode=${mode}`);
+    let reply = '';
+    es.addEventListener('token', (e) => {
+      reply += JSON.parse(e.data).token;
+      bubble.textContent = reply;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    });
+    es.addEventListener('done', () => {
+      statusEl.textContent = '✔ Done — ran entirely on-device';
+      chatInput.disabled = false;
+      sendButton.disabled = false;
+      chatInput.focus();
+      es.close();
+    });
+    es.addEventListener('error', (e) => {
+      let message = 'Generation failed';
+      try { message = JSON.parse(e.data).error; } catch {}
+      statusEl.textContent = '✖ ' + message;
+      chatInput.disabled = false;
+      sendButton.disabled = false;
+      es.close();
+    });
+  }
+</script>
+</body>
+</html>
