@@ -42,7 +42,7 @@ const chatModels = {};
 async function getChatModel(mode) {
   if (chatModels[mode]) return chatModels[mode];
 
-  const modelConfig = { device: "gpu", ctx_size: 512 };
+  const modelConfig = { device: "gpu", ctx_size: 2048 };
   if (mode === "lora") {
     const adapterPath = findAdapter();
     if (!adapterPath) throw new Error("No trained adapter yet — train first");

@@ -41,7 +41,7 @@ async function main() {
     modelType: "llm",
     modelConfig: {
       device: "gpu",
-      ctx_size: 512,
+      ctx_size: 2048,
       ...(loraPath ? { lora: loraPath } : {}),
     },
     onProgress: (p) => {
