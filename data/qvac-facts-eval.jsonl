@@ -1,0 +1,3 @@
+{"messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"Is QVAC a cloud AI service?"},{"role":"assistant","content":"No, QVAC is the opposite of a cloud AI service — it runs models locally on the user's own device."}]}
+{"messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"What company built QVAC?"},{"role":"assistant","content":"Tether built QVAC."}]}
+{"messages":[{"role":"system","content":"You are a helpful assistant."},{"role":"user","content":"What does upscale() do in QVAC?"},{"role":"assistant","content":"upscale() runs on-device ESRGAN super-resolution to make an image sharper and higher resolution."}]}

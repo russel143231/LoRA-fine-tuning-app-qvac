@@ -1,0 +1,26 @@
+{
+  "name": "qvac-lora-trainer",
+  "version": "1.0.0",
+  "description": "Fine-tunes a small local LLM with a LoRA adapter entirely on-device using Tether's QVAC SDK, no cloud, no API key.",
+  "type": "module",
+  "main": "src/train.js",
+  "scripts": {
+    "train": "node src/train.js",
+    "chat": "node src/chat.js",
+    "gui": "node src/gui.js"
+  },
+  "keywords": [
+    "qvac",
+    "on-device-ai",
+    "fine-tuning",
+    "lora",
+    "offline-ai"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@qvac/sdk": "^0.19.0"
+  },
+  "engines": {
+    "node": ">=22.17"
+  }
+}
